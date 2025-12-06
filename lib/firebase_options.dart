@@ -64,7 +64,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '571297197212',
     projectId: 'to-do-92f42',
     storageBucket: 'to-do-92f42.firebasestorage.app',
-    iosBundleId: 'com.example.untitled',
+    iosBundleId: 'com.example.to_do_app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -73,7 +73,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '571297197212',
     projectId: 'to-do-92f42',
     storageBucket: 'to-do-92f42.firebasestorage.app',
-    iosBundleId: 'com.example.untitled',
+    iosBundleId: 'com.example.to_do_app',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
