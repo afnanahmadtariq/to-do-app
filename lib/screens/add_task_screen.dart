@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/task.dart';
+import '../models/project.dart';
 import '../providers/task_provider.dart';
 import 'package:intl/intl.dart';
 
@@ -13,136 +14,267 @@ class AddTaskScreen extends StatefulWidget {
 }
 
 class _AddTaskScreenState extends State<AddTaskScreen> {
-  final _formKey = GlobalKey<FormState>();
-  late String _title;
-  late String _notes;
-  DateTime? _dueDate;
-  late TaskPriority _priority;
+  final _titleController = TextEditingController();
+  final _notesController = TextEditingController();
+  DateTime? _dueDate = DateTime.now();
+  TaskPriority _priority = TaskPriority.medium;
   String? _selectedProjectId;
-  List<String> _selectedTagIds = [];
+  final List<String> _selectedTagIds = [];
 
   @override
   void initState() {
     super.initState();
-    final task = widget.taskToEdit;
-    _title = task?.title ?? '';
-    _notes = task?.notes ?? '';
-    _dueDate = task?.dueDate;
-    _priority = task?.priority ?? TaskPriority.medium;
-    _selectedProjectId = task?.projectId;
-    _selectedTagIds = List.from(task?.tagIds ?? []);
+    if (widget.taskToEdit != null) {
+      _titleController.text = widget.taskToEdit!.title;
+      _notesController.text = widget.taskToEdit!.notes;
+      _dueDate = widget.taskToEdit!.dueDate;
+      _priority = widget.taskToEdit!.priority;
+      _selectedProjectId = widget.taskToEdit!.projectId;
+      _selectedTagIds.addAll(widget.taskToEdit!.tagIds);
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _notesController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final taskProvider = Provider.of<TaskProvider>(context);
     final projects = taskProvider.projects;
-    final tags = taskProvider.tags;
 
-    // If editing and project is null, try to set it to first available if any
     if (_selectedProjectId == null && projects.isNotEmpty) {
       _selectedProjectId = projects.first.id;
     }
 
+    final isToday = _dueDate != null &&
+        _dueDate!.year == DateTime.now().year &&
+        _dueDate!.month == DateTime.now().month &&
+        _dueDate!.day == DateTime.now().day;
+    final isTomorrow = _dueDate != null &&
+        _dueDate!.year == DateTime.now().year &&
+        _dueDate!.month == DateTime.now().month &&
+        _dueDate!.day == DateTime.now().day + 1;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.taskToEdit == null ? 'Add Task' : 'Edit Task'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: _saveTask,
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextFormField(
-                initialValue: _title,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Please enter a title' : null,
-                onSaved: (value) => _title = value!,
-              ),
               const SizedBox(height: 16),
-              TextFormField(
-                initialValue: _notes,
-                decoration: const InputDecoration(
-                  labelText: 'Notes',
-                  border: OutlineInputBorder(),
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: const Icon(Icons.close, size: 20, color: Colors.black),
                 ),
-                maxLines: 3,
-                onSaved: (value) => _notes = value ?? '',
               ),
-              const SizedBox(height: 16),
-              ListTile(
-                title: const Text('Due Date'),
-                subtitle: Text(_dueDate == null
-                    ? 'Set date'
-                    : DateFormat('MMM d, yyyy HH:mm').format(_dueDate!)),
-                leading: const Icon(Icons.calendar_today),
-                trailing: _dueDate != null ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () => setState(() => _dueDate = null),
-                ) : null,
-                onTap: _pickDateTime,
+              const SizedBox(height: 24),
+              const Text(
+                'New Task',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
               ),
-              const Divider(),
-              const Text('Priority', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 24),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: TaskPriority.values.map((p) {
-                  return ChoiceChip(
-                    label: Text(p.name.toUpperCase()),
-                    selected: _priority == p,
-                    onSelected: (selected) {
-                      if (selected) setState(() => _priority = p);
-                    },
-                  );
-                }).toList(),
-              ),
-              const Divider(),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: 'Project'),
-                initialValue: _selectedProjectId,
-                items: projects.map((p) {
-                  return DropdownMenuItem(
-                    value: p.id,
-                    child: Text(p.name),
-                  );
-                }).toList(),
-                onChanged: (val) => setState(() => _selectedProjectId = val),
-                validator: (val) => val == null ? 'Select a project' : null,
+                children: [
+                  _buildDatePill(
+                    label: 'Today',
+                    isSelected: isToday,
+                    onTap: () => setState(() => _dueDate = DateTime.now()),
+                  ),
+                  const SizedBox(width: 12),
+                  _buildDatePill(
+                    label: 'Tomorrow',
+                    isSelected: isTomorrow,
+                    onTap: () => setState(() => _dueDate = DateTime.now().add(const Duration(days: 1))),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
-              const Text('Tags', style: TextStyle(fontWeight: FontWeight.bold)),
-              Wrap(
-                spacing: 8,
-                children: tags.map((tag) {
-                  final isSelected = _selectedTagIds.contains(tag.id);
-                  return FilterChip(
-                    label: Text(tag.name),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedTagIds.add(tag.id);
-                        } else {
-                          _selectedTagIds.remove(tag.id);
-                        }
-                      });
-                    },
-                  );
-                }).toList(),
+              Row(
+                children: [
+                  _buildIconButton(Icons.history, onTap: _pickDateTime),
+                  const SizedBox(width: 12),
+                  _buildIconButton(Icons.add_alert_outlined),
+                ],
               ),
+              const SizedBox(height: 32),
+              _buildSectionLabel('PROJECTS'),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 48,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    _buildAddProjectButton(),
+                    const SizedBox(width: 12),
+                    ...projects.map((project) {
+                      final isSelected = _selectedProjectId == project.id;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 12.0),
+                        child: _buildProjectPill(project, isSelected),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              _buildSectionLabel('TITLE'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _titleController,
+                decoration: InputDecoration(
+                  hintText: 'Task Title',
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _notesController,
+                decoration: InputDecoration(
+                  hintText: 'Description (optional)',
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                ),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _saveTask,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    widget.taskToEdit == null ? 'Create' : 'Update',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(String label) {
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        color: Colors.grey.shade500,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+
+  Widget _buildDatePill({required String label, required bool isSelected, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.black : Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: isSelected ? Colors.black : Colors.grey.shade300),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconButton(IconData icon, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Icon(icon, size: 20, color: Colors.black),
+      ),
+    );
+  }
+
+  Widget _buildAddProjectButton() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: const Icon(Icons.add, size: 20, color: Colors.black),
+    );
+  }
+
+  Widget _buildProjectPill(Project project, bool isSelected) {
+    return GestureDetector(
+      onTap: () => setState(() => _selectedProjectId = project.id),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? const LinearGradient(colors: [Colors.blue, Colors.purple])
+              : null,
+          color: isSelected ? null : Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: isSelected ? null : Border.all(color: Colors.grey.shade300),
+        ),
+        child: Text(
+          project.name,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.black,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -176,36 +308,35 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   }
 
   void _saveTask() {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      final provider = Provider.of<TaskProvider>(context, listen: false);
-      
-      if (widget.taskToEdit == null) {
-        provider.addTask(
-          title: _title,
-          notes: _notes,
-          dueDate: _dueDate,
-          priority: _priority,
-          projectId: _selectedProjectId!,
-          tagIds: _selectedTagIds,
-        );
-      } else {
-        final updatedTask = Task(
-          id: widget.taskToEdit!.id,
-          title: _title,
-          notes: _notes,
-          dueDate: _dueDate,
-          priority: _priority,
-          status: widget.taskToEdit!.status,
-          projectId: _selectedProjectId!,
-          tagIds: _selectedTagIds,
-          subTasks: widget.taskToEdit!.subTasks,
-          attachments: widget.taskToEdit!.attachments,
-          createdAt: widget.taskToEdit!.createdAt,
-        );
-        provider.updateTask(updatedTask);
-      }
-      Navigator.pop(context);
+    if (_titleController.text.isEmpty) return;
+
+    final provider = Provider.of<TaskProvider>(context, listen: false);
+
+    if (widget.taskToEdit == null) {
+      provider.addTask(
+        title: _titleController.text,
+        notes: _notesController.text,
+        dueDate: _dueDate,
+        priority: _priority,
+        projectId: _selectedProjectId!,
+        tagIds: _selectedTagIds,
+      );
+    } else {
+      final updatedTask = Task(
+        id: widget.taskToEdit!.id,
+        title: _titleController.text,
+        notes: _notesController.text,
+        dueDate: _dueDate,
+        priority: _priority,
+        status: widget.taskToEdit!.status,
+        projectId: _selectedProjectId!,
+        tagIds: _selectedTagIds,
+        subTasks: widget.taskToEdit!.subTasks,
+        attachments: widget.taskToEdit!.attachments,
+        createdAt: widget.taskToEdit!.createdAt,
+      );
+      provider.updateTask(updatedTask);
     }
+    Navigator.pop(context);
   }
 }
