@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../models/project.dart';
 import '../models/task.dart';
 import '../providers/task_provider.dart';
-import '../widgets/task_tile.dart';
 import 'add_task_screen.dart';
 
 class ProjectDetailScreen extends StatelessWidget {

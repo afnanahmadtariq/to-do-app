@@ -5,7 +5,6 @@ import '../widgets/task_tile.dart';
 import '../widgets/task_search_delegate.dart';
 import 'add_task_screen.dart';
 import 'project_detail_screen.dart';
-import '../models/task.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

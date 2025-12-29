@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../models/task.dart';
 import '../models/project.dart';
 import '../providers/task_provider.dart';
-import 'package:intl/intl.dart';
 
 class AddTaskScreen extends StatefulWidget {
   final Task? taskToEdit;
