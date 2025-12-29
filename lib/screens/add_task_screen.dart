@@ -111,7 +111,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               const Divider(),
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(labelText: 'Project'),
-                value: _selectedProjectId,
+                initialValue: _selectedProjectId,
                 items: projects.map((p) {
                   return DropdownMenuItem(
                     value: p.id,
