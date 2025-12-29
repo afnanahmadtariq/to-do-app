@@ -229,7 +229,8 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('New Project'),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(hintText: 'Project Name', autoFocus: true),
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Project Name'),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
