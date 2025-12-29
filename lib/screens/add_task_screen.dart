@@ -16,7 +16,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
   DateTime? _dueDate = DateTime.now();
-  TaskPriority _priority = TaskPriority.medium;
+  final TaskPriority _priority = TaskPriority.medium;
   String? _selectedProjectId;
   final List<String> _selectedTagIds = [];
 
@@ -27,7 +27,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       _titleController.text = widget.taskToEdit!.title;
       _notesController.text = widget.taskToEdit!.notes;
       _dueDate = widget.taskToEdit!.dueDate;
-      _priority = widget.taskToEdit!.priority;
       _selectedProjectId = widget.taskToEdit!.projectId;
       _selectedTagIds.addAll(widget.taskToEdit!.tagIds);
     }
@@ -174,7 +173,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _saveTask,
+                  onPressed: () => _saveTask(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     foregroundColor: Colors.white,
@@ -295,6 +294,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     );
     if (time == null) return;
 
+    if (!mounted) return;
     setState(() {
       _dueDate = DateTime(
         date.year,
@@ -306,13 +306,13 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     });
   }
 
-  void _saveTask() {
+  Future<void> _saveTask(BuildContext context) async {
     if (_titleController.text.isEmpty) return;
 
     final provider = Provider.of<TaskProvider>(context, listen: false);
 
     if (widget.taskToEdit == null) {
-      provider.addTask(
+      await provider.addTask(
         title: _titleController.text,
         notes: _notesController.text,
         dueDate: _dueDate,
@@ -334,8 +334,10 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         attachments: widget.taskToEdit!.attachments,
         createdAt: widget.taskToEdit!.createdAt,
       );
-      provider.updateTask(updatedTask);
+      await provider.updateTask(updatedTask);
     }
-    Navigator.pop(context);
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 }

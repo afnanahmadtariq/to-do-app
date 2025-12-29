@@ -35,7 +35,7 @@ class TaskTile extends StatelessWidget {
             border: Border.all(color: Colors.grey.shade100),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -104,7 +104,7 @@ class TaskTile extends StatelessWidget {
                                 '#${tag.name}',
                                 style: TextStyle(
                                   fontSize: 12, 
-                                  color: Color(tag.colorValue).withOpacity(0.8),
+                                  color: Color(tag.colorValue).withValues(alpha: 0.8),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),

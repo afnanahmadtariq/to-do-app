@@ -64,15 +64,15 @@ class ProjectDetailScreen extends StatelessWidget {
     return Container(
       height: 350,
       width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(40), bottomRight: Radius.circular(40)),
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(40), bottomRight: Radius.circular(40)),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.orange.shade300,
-            Colors.purple.shade400,
-            Colors.blue.shade300,
+            Color(0xFFFFB74D), // Colors.orange.shade300
+            Color(0xFFAB47BC), // Colors.purple.shade400
+            Color(0xFF64B5F6), // Colors.blue.shade300
           ],
         ),
       ),
@@ -126,7 +126,7 @@ class ProjectDetailScreen extends StatelessWidget {
                           'tasks',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withValues(alpha: 0.8),
                           ),
                         ),
                       ],
@@ -146,7 +146,7 @@ class ProjectDetailScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => AddTaskScreen(
+                      builder: (context) => const AddTaskScreen(
                         taskToEdit: null, // New task
                       ),
                     ),
@@ -156,11 +156,11 @@ class ProjectDetailScreen extends StatelessWidget {
                   height: 70,
                   width: 70,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
@@ -182,9 +182,9 @@ class ProjectDetailScreen extends StatelessWidget {
       height: 60,
       width: 25,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
       ),
       child: Stack(
         alignment: Alignment.bottomCenter,
@@ -208,7 +208,7 @@ class ProjectDetailScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.8),
+          color: Colors.white.withValues(alpha: 0.8),
           shape: BoxShape.circle,
         ),
         child: Icon(icon, color: Colors.black, size: 20),

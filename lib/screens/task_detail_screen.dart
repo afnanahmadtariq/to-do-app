@@ -143,7 +143,7 @@ class TaskDetailScreen extends StatelessWidget {
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Color(tag.colorValue).withOpacity(0.1),
+                            color: Color(tag.colorValue).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
