@@ -199,7 +199,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           status: widget.taskToEdit!.status,
           projectId: _selectedProjectId!,
           tagIds: _selectedTagIds,
-          subTaskIds: widget.taskToEdit!.subTaskIds,
+          subTasks: widget.taskToEdit!.subTasks,
           attachments: widget.taskToEdit!.attachments,
           createdAt: widget.taskToEdit!.createdAt,
         );

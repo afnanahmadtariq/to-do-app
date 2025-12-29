@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/task.dart';
+import '../models/tag.dart';
 import '../providers/task_provider.dart';
 import 'package:intl/intl.dart';
 import 'add_task_screen.dart';
@@ -147,7 +148,7 @@ class TaskDetailScreen extends StatelessWidget {
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(hintText: 'Sub-task title'),
-          autoFocus: true,
+          autofocus: true,
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),

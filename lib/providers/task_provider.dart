@@ -42,6 +42,7 @@ class TaskProvider with ChangeNotifier {
       id: _uuid.v4(),
       name: name,
       colorValue: colorValue,
+      iconCodePoint: Icons.folder.codePoint,
     );
     await _firebaseService.addProject(project);
   }
@@ -92,7 +93,7 @@ class TaskProvider with ChangeNotifier {
       status: task.status == TaskStatus.completed ? TaskStatus.pending : TaskStatus.completed,
       projectId: task.projectId,
       tagIds: task.tagIds,
-      subTaskIds: task.subTaskIds,
+      subTasks: task.subTasks,
       attachments: task.attachments,
       createdAt: task.createdAt,
     );

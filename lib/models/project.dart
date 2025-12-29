@@ -11,7 +11,7 @@ class Project {
     required this.id,
     required this.name,
     this.colorValue = 0xFF2196F3, // Default blue
-    this.iconCodePoint = Icons.folder.codePoint,
+    required this.iconCodePoint,
     this.isArchived = false,
   });
 

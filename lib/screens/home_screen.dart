@@ -216,7 +216,9 @@ class _HomeScreenState extends State<HomeScreen> {
       _selectedProjectId = projectId;
       _selectedTagId = tagId;
     });
-    Navigator.pop(context);
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
   }
 
   void _showCreateProjectDialog(BuildContext context, TaskProvider provider) {
