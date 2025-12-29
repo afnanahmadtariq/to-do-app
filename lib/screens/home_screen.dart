@@ -4,6 +4,7 @@ import '../providers/task_provider.dart';
 import '../widgets/task_tile.dart';
 import '../widgets/task_search_delegate.dart';
 import 'add_task_screen.dart';
+import 'project_detail_screen.dart';
 import '../models/task.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -178,7 +179,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 valueColor: AlwaysStoppedAnimation<Color>(Color(project.colorValue)),
               ),
               selected: _selectedProjectId == project.id,
-              onTap: () => _setView(project.name, projectId: project.id),
+              onTap: () {
+                Navigator.pop(context); // Close drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProjectDetailScreen(project: project),
+                  ),
+                );
+              },
             );
           }),
           const Divider(),
