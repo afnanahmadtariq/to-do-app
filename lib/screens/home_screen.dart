@@ -53,72 +53,76 @@ class _HomeScreenState extends State<HomeScreen> {
                 builder: (context, taskProvider, child) {
                   var tasks = _getFilteredTasks(taskProvider);
 
-                  return tasks.isEmpty
-                      ? _buildEmptyState()
-                      : ListView.builder(
-                          key: ValueKey('task-list-${_selectedView}-${_selectedProjectId ?? ''}-${_selectedTagId ?? ''}'),
-                          padding: const EdgeInsets.only(bottom: 100),
-                          itemCount: tasks.length,
-                          itemBuilder: (context, index) {
-                            final task = tasks[index];
-                            return Dismissible(
-                              key: ValueKey(task.id),
-                              direction: DismissDirection.endToStart,
-                              confirmDismiss: (direction) async {
-                                return await showDialog<bool>(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      title: const Text('Delete Task'),
-                                      content: Text('Are you sure you want to delete "${task.title}"?'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.of(context).pop(false),
-                                          child: const Text('Cancel'),
+                  return RefreshIndicator(
+                    onRefresh: () => taskProvider.refreshData(),
+                    color: Colors.black,
+                    child: tasks.isEmpty
+                        ? _buildEmptyStateScrollable()
+                        : ListView.builder(
+                            key: ValueKey('task-list-$_selectedView-${_selectedProjectId ?? ''}-${_selectedTagId ?? ''}'),
+                            padding: const EdgeInsets.only(bottom: 100),
+                            itemCount: tasks.length,
+                            itemBuilder: (context, index) {
+                              final task = tasks[index];
+                              return Dismissible(
+                                key: ValueKey(task.id),
+                                direction: DismissDirection.endToStart,
+                                confirmDismiss: (direction) async {
+                                  return await showDialog<bool>(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        title: const Text('Delete Task'),
+                                        content: Text('Are you sure you want to delete "${task.title}"?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(context).pop(false),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () => Navigator.of(context).pop(true),
+                                            style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                            child: const Text('Delete'),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ) ?? false;
+                                },
+                                background: Container(
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.only(right: 24),
+                                  color: Colors.red.shade50,
+                                  child: Icon(Icons.delete_outline, color: Colors.red.shade400),
+                                ),
+                                onDismissed: (direction) async {
+                                  try {
+                                    await taskProvider.deleteTask(task.id);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Task "${task.title}" deleted'),
+                                          duration: const Duration(seconds: 2),
                                         ),
-                                        TextButton(
-                                          onPressed: () => Navigator.of(context).pop(true),
-                                          style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                          child: const Text('Delete'),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Error deleting task: $e'),
+                                          backgroundColor: Colors.red,
+                                          duration: const Duration(seconds: 3),
                                         ),
-                                      ],
-                                    );
-                                  },
-                                ) ?? false;
-                              },
-                              background: Container(
-                                alignment: Alignment.centerRight,
-                                padding: const EdgeInsets.only(right: 24),
-                                color: Colors.red.shade50,
-                                child: Icon(Icons.delete_outline, color: Colors.red.shade400),
-                              ),
-                              onDismissed: (direction) async {
-                                try {
-                                  await taskProvider.deleteTask(task.id);
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Task "${task.title}" deleted'),
-                                        duration: const Duration(seconds: 2),
-                                      ),
-                                    );
+                                      );
+                                    }
                                   }
-                                } catch (e) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Error deleting task: $e'),
-                                        backgroundColor: Colors.red,
-                                        duration: const Duration(seconds: 3),
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                              child: TaskTile(task: task),
-                            );
-                          },
-                        );
+                                },
+                                child: TaskTile(task: task),
+                              );
+                            },
+                          ),
+                  );
                 },
               ),
             ),
@@ -199,6 +203,38 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // Scrollable version of empty state for RefreshIndicator to work
+  Widget _buildEmptyStateScrollable() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.auto_awesome, size: 64, color: Colors.grey.shade200),
+                  const SizedBox(height: 16),
+                  Text(
+                    'All clear for now',
+                    style: TextStyle(color: Colors.grey.shade400, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Pull down to refresh',
+                    style: TextStyle(color: Colors.grey.shade300, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

@@ -78,6 +78,22 @@ class TaskProvider with ChangeNotifier {
     });
   }
 
+  // Refresh data from Firebase
+  Future<void> refreshData() async {
+    if (_userId == null) return;
+    
+    // Cancel existing subscriptions
+    await _tasksSubscription?.cancel();
+    await _projectsSubscription?.cancel();
+    await _tagsSubscription?.cancel();
+    
+    // Re-initialize streams to get fresh data
+    _initUserData(_userId!);
+    
+    // Wait a bit for data to load
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
   // Batch multiple updates together to reduce rebuilds
   void _scheduleNotify() {
     _hasUpdates = true;
@@ -108,7 +124,7 @@ class TaskProvider with ChangeNotifier {
     super.dispose();
   }
 
-  // Project Operations
+  // Project Operations - with optimistic update
   Future<void> addProject(String name, int colorValue) async {
     if (_userId == null) return;
     
@@ -118,10 +134,22 @@ class TaskProvider with ChangeNotifier {
       colorValue: colorValue,
       iconCodePoint: Icons.folder.codePoint,
     );
-    await _firebaseService.addProject(project, _userId!);
+    
+    // Optimistic update: add to local state immediately
+    _projects.add(project);
+    notifyListeners();
+    
+    try {
+      await _firebaseService.addProject(project, _userId!);
+    } catch (e) {
+      // Rollback on error
+      _projects.removeWhere((p) => p.id == project.id);
+      notifyListeners();
+      rethrow;
+    }
   }
 
-  // Tag Operations
+  // Tag Operations - with optimistic update
   Future<void> addTag(String name, int colorValue) async {
     if (_userId == null) return;
     
@@ -130,10 +158,22 @@ class TaskProvider with ChangeNotifier {
       name: name,
       colorValue: colorValue,
     );
-    await _firebaseService.addTag(tag, _userId!);
+    
+    // Optimistic update: add to local state immediately
+    _tags.add(tag);
+    notifyListeners();
+    
+    try {
+      await _firebaseService.addTag(tag, _userId!);
+    } catch (e) {
+      // Rollback on error
+      _tags.removeWhere((t) => t.id == tag.id);
+      notifyListeners();
+      rethrow;
+    }
   }
 
-  // Task Operations
+  // Task Operations - with optimistic update
   Future<void> addTask({
     required String title,
     String notes = '',
@@ -154,14 +194,53 @@ class TaskProvider with ChangeNotifier {
       tagIds: tagIds,
       createdAt: DateTime.now(),
     );
-    await _firebaseService.addTask(task, _userId!);
+    
+    // Optimistic update: add to local state immediately
+    _tasks.insert(0, task); // Insert at beginning (newest first)
+    _invalidateCache();
+    notifyListeners();
+    
+    try {
+      await _firebaseService.addTask(task, _userId!);
+    } catch (e) {
+      // Rollback on error
+      _tasks.removeWhere((t) => t.id == task.id);
+      _invalidateCache();
+      notifyListeners();
+      rethrow;
+    }
   }
 
+  // Update task - with optimistic update
   Future<void> updateTask(Task task) async {
-    await _firebaseService.updateTask(task);
+    // Find the original task
+    final taskIndex = _tasks.indexWhere((t) => t.id == task.id);
+    if (taskIndex == -1) return;
+    
+    final originalTask = _tasks[taskIndex];
+    
+    // Optimistic update: update local state immediately
+    _tasks[taskIndex] = task;
+    _invalidateCache();
+    notifyListeners();
+    
+    try {
+      await _firebaseService.updateTask(task);
+    } catch (e) {
+      // Rollback on error
+      _tasks[taskIndex] = originalTask;
+      _invalidateCache();
+      notifyListeners();
+      rethrow;
+    }
   }
 
+  // Toggle task status - with optimistic update
   Future<void> toggleTaskStatus(Task task) async {
+    final taskIndex = _tasks.indexWhere((t) => t.id == task.id);
+    if (taskIndex == -1) return;
+    
+    final originalTask = _tasks[taskIndex];
     final updatedTask = Task(
       id: task.id,
       title: task.title,
@@ -175,7 +254,21 @@ class TaskProvider with ChangeNotifier {
       attachments: task.attachments,
       createdAt: task.createdAt,
     );
-    await _firebaseService.updateTask(updatedTask);
+    
+    // Optimistic update: update local state immediately
+    _tasks[taskIndex] = updatedTask;
+    _invalidateCache();
+    notifyListeners();
+    
+    try {
+      await _firebaseService.updateTask(updatedTask);
+    } catch (e) {
+      // Rollback on error
+      _tasks[taskIndex] = originalTask;
+      _invalidateCache();
+      notifyListeners();
+      rethrow;
+    }
   }
 
   Future<void> deleteTask(String taskId) async {
