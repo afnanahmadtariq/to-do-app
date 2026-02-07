@@ -298,18 +298,27 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   Widget _buildHeader(BuildContext context, int total, int completed) {
+    // Create gradient colors based on project color
+    final projectColor = Color(_project.colorValue);
+    final hslColor = HSLColor.fromColor(projectColor);
+    
+    // Create a nice gradient using the project color
+    final lighterColor = hslColor.withLightness((hslColor.lightness + 0.2).clamp(0.0, 1.0)).toColor();
+    final darkerColor = hslColor.withLightness((hslColor.lightness - 0.1).clamp(0.0, 1.0)).toColor();
+    final accentColor = hslColor.withHue((hslColor.hue + 30) % 360).toColor();
+
     return Container(
       height: 350,
       width: double.infinity,
-      decoration: const BoxDecoration(
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(40), bottomRight: Radius.circular(40)),
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(40), bottomRight: Radius.circular(40)),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFFFFB74D), // Colors.orange.shade300
-            Color(0xFFAB47BC), // Colors.purple.shade400
-            Color(0xFF64B5F6), // Colors.blue.shade300
+            lighterColor,
+            projectColor,
+            accentColor,
           ],
         ),
       ),
