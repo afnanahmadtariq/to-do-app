@@ -5,15 +5,28 @@ import '../models/task.dart';
 import '../providers/task_provider.dart';
 import 'add_task_screen.dart';
 
-class ProjectDetailScreen extends StatelessWidget {
+class ProjectDetailScreen extends StatefulWidget {
   final Project project;
 
   const ProjectDetailScreen({super.key, required this.project});
 
   @override
+  State<ProjectDetailScreen> createState() => _ProjectDetailScreenState();
+}
+
+class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
+  late Project _project;
+
+  @override
+  void initState() {
+    super.initState();
+    _project = widget.project;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final taskProvider = Provider.of<TaskProvider>(context);
-    final projectTasks = taskProvider.tasks.where((t) => t.projectId == project.id).toList();
+    final projectTasks = taskProvider.tasks.where((t) => t.projectId == _project.id).toList();
     final pendingTasks = projectTasks.where((t) => t.status == TaskStatus.pending).toList();
     final completedTasks = projectTasks.where((t) => t.status == TaskStatus.completed).toList();
 
@@ -51,13 +64,237 @@ class ProjectDetailScreen extends StatelessWidget {
           Positioned(
             top: 40,
             right: 20,
-            child: _buildCircleButton(Icons.more_horiz, () {
-              // TODO: Show project options
-            }),
+            child: _buildOptionsButton(context, taskProvider),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildOptionsButton(BuildContext context, TaskProvider taskProvider) {
+    return PopupMenuButton<String>(
+      onSelected: (value) => _handleMenuAction(context, value, taskProvider),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      offset: const Offset(0, 45),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.8),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.more_horiz, color: Colors.black, size: 20),
+      ),
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: 'rename',
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 20),
+              SizedBox(width: 12),
+              Text('Rename Project'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'change_color',
+          child: Row(
+            children: [
+              Icon(Icons.palette_outlined, size: 20),
+              SizedBox(width: 12),
+              Text('Change Color'),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, size: 20, color: Colors.red),
+              SizedBox(width: 12),
+              Text('Delete Project', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _handleMenuAction(BuildContext context, String action, TaskProvider taskProvider) {
+    switch (action) {
+      case 'rename':
+        _showRenameDialog(context, taskProvider);
+        break;
+      case 'change_color':
+        _showColorPicker(context, taskProvider);
+        break;
+      case 'delete':
+        _showDeleteConfirmation(context, taskProvider);
+        break;
+    }
+  }
+
+  Future<void> _showRenameDialog(BuildContext context, TaskProvider taskProvider) async {
+    final nameController = TextEditingController(text: _project.name);
+    
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename Project'),
+        content: TextField(
+          controller: nameController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Project name',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, nameController.text),
+            child: const Text('Rename'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty && result != _project.name && mounted) {
+      final updatedProject = Project(
+        id: _project.id,
+        name: result,
+        colorValue: _project.colorValue,
+        iconCodePoint: _project.iconCodePoint,
+      );
+      await taskProvider.updateProject(updatedProject);
+      setState(() {
+        _project = updatedProject;
+      });
+    }
+  }
+
+  Future<void> _showColorPicker(BuildContext context, TaskProvider taskProvider) async {
+    final colors = [
+      Colors.blue,
+      Colors.red,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.pink,
+      Colors.indigo,
+      Colors.amber,
+      Colors.cyan,
+    ];
+
+    final selectedColor = await showDialog<Color>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Choose Color'),
+        content: Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: colors.map((color) => GestureDetector(
+            onTap: () => Navigator.pop(context, color),
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: _project.colorValue == color.value
+                    ? Border.all(color: Colors.black, width: 3)
+                    : null,
+              ),
+              child: _project.colorValue == color.value
+                  ? const Icon(Icons.check, color: Colors.white)
+                  : null,
+            ),
+          )).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (selectedColor != null && mounted) {
+      final updatedProject = Project(
+        id: _project.id,
+        name: _project.name,
+        colorValue: selectedColor.value,
+        iconCodePoint: _project.iconCodePoint,
+      );
+      await taskProvider.updateProject(updatedProject);
+      setState(() {
+        _project = updatedProject;
+      });
+    }
+  }
+
+  Future<void> _showDeleteConfirmation(BuildContext context, TaskProvider taskProvider) async {
+    final projectTasks = taskProvider.tasks.where((t) => t.projectId == _project.id).toList();
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Project'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to delete "${_project.name}"?'),
+            if (projectTasks.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'This project has ${projectTasks.length} task(s). They will become unassigned.',
+                        style: TextStyle(fontSize: 13, color: Colors.orange.shade900),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await taskProvider.deleteProject(_project.id);
+      if (mounted) {
+        Navigator.pop(context); // Go back after deleting
+      }
+    }
   }
 
   Widget _buildHeader(BuildContext context, int total, int completed) {
@@ -97,7 +334,7 @@ class ProjectDetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  project.name,
+                  _project.name,
                   style: const TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.bold,

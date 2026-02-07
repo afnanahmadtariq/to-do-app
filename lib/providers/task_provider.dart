@@ -149,6 +149,48 @@ class TaskProvider with ChangeNotifier {
     }
   }
 
+  // Update project - with optimistic update
+  Future<void> updateProject(Project project) async {
+    final projectIndex = _projects.indexWhere((p) => p.id == project.id);
+    if (projectIndex == -1) return;
+    
+    final originalProject = _projects[projectIndex];
+    
+    // Optimistic update
+    _projects[projectIndex] = project;
+    notifyListeners();
+    
+    try {
+      await _firebaseService.updateProject(project);
+    } catch (e) {
+      // Rollback on error
+      _projects[projectIndex] = originalProject;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  // Delete project - with optimistic update
+  Future<void> deleteProject(String projectId) async {
+    final projectIndex = _projects.indexWhere((p) => p.id == projectId);
+    if (projectIndex == -1) return;
+    
+    final deletedProject = _projects[projectIndex];
+    
+    // Optimistic update
+    _projects.removeAt(projectIndex);
+    notifyListeners();
+    
+    try {
+      await _firebaseService.deleteProject(projectId);
+    } catch (e) {
+      // Rollback on error
+      _projects.insert(projectIndex, deletedProject);
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   // Tag Operations - with optimistic update
   Future<void> addTag(String name, int colorValue) async {
     if (_userId == null) return;
