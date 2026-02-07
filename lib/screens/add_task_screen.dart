@@ -244,14 +244,61 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   }
 
   Widget _buildAddProjectButton() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.grey.shade300),
+    return GestureDetector(
+      onTap: () => _showAddProjectDialog(),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: const Icon(Icons.add, size: 20, color: Colors.black),
       ),
-      child: const Icon(Icons.add, size: 20, color: Colors.black),
     );
+  }
+
+  Future<void> _showAddProjectDialog() async {
+    final nameController = TextEditingController();
+    
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('New Project'),
+        content: TextField(
+          controller: nameController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Project name',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, nameController.text),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty && mounted) {
+      final provider = Provider.of<TaskProvider>(context, listen: false);
+      await provider.addProject(result, Colors.blue.value);
+      
+      // Select the newly created project after a short delay
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (mounted) {
+        final projects = Provider.of<TaskProvider>(context, listen: false).projects;
+        if (projects.isNotEmpty) {
+          setState(() {
+            _selectedProjectId = projects.last.id;
+          });
+        }
+      }
+    }
   }
 
   Widget _buildProjectPill(Project project, bool isSelected) {
@@ -307,7 +354,19 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   }
 
   Future<void> _saveTask(BuildContext context) async {
-    if (_titleController.text.isEmpty) return;
+    if (_titleController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a task title')),
+      );
+      return;
+    }
+
+    if (_selectedProjectId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select or create a project first')),
+      );
+      return;
+    }
 
     final provider = Provider.of<TaskProvider>(context, listen: false);
 
